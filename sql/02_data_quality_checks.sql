@@ -113,3 +113,89 @@ SELECT
 FROM orders
 GROUP BY customer_id, order_date, channel, primary_category, gross_revenue
 HAVING COUNT(*) > 1;
+
+
+-- ---------------------------------------------------------------------
+-- Check 8: Minimum and maximum of numeric columns
+-- Why: Extremes reveal impossible values (negative revenue, zero items)
+--      and suspicious outliers that distort averages and totals.
+-- Expected: no negatives in revenue or cost columns; items 1-5;
+--           discount 0-25; platform_fee min 0 (Website/Mobile App).
+-- Result: all ranges valid and consistent with the data dictionary.
+--         profit ranges from -469.09 to 465.35. Negative profit is
+--         expected on returned orders (net_revenue = 0, costs retained).
+-- ---------------------------------------------------------------------
+
+SELECT
+	MIN(gross_revenue) AS min_gross_revenue,
+    MAX(gross_revenue) AS max_gross_revennue,
+    MIN(items_ordered) AS min_items_ordered,
+    MAX(items_ordered) AS max_items_orderes,
+    MIN(discount_pct) AS min_discount_pct,
+    MAX(discount_pct) AS max_discount_pct,
+    MIN(shipping_cost) AS min_shipping_cost,
+    MAX(shipping_cost) AS max_shipping_cost,
+    MIN(product_cost) AS min_product_cost,
+    MAX(product_cost) AS max_product_cost,
+    MIN(platform_fee) AS min_platform_fee,
+    MAX(platform_fee) AS max_platform_fee,
+    MIN(transaction_fee) AS min_transaction_fee,
+	MAX(transaction_fee) AS max_transaction_fee,
+    MIN(profit) AS min_profit,
+    MAX(profit) AS max_profit
+FROM orders;
+
+
+-- ---------------------------------------------------------------------
+-- Check 9: Impossible values in orders
+-- Why: Min/max shows the extremes, but this counts every row that
+--      breaks a rule, proving that no row at all is invalid.
+-- Rules: gross_revenue and items_ordered must be > 0; shipping_cost,
+--        product_cost and transaction_fee must be > 0 (stricter than
+--        "not negative"). platform_fee is excluded because 0 is valid
+--        for Website and Mobile App.
+-- Logic: OR, because any single violation makes a row invalid.
+-- Expected: 0
+-- Result: 0 (confirmed)
+-- ---------------------------------------------------------------------
+
+SELECT COUNT(*) AS invalid_values_rows
+FROM orders
+WHERE
+	gross_revenue <= 0 
+    OR items_ordered <= 0 
+    OR shipping_cost <= 0 
+    OR product_cost <= 0 
+    OR transaction_fee <= 0;
+    
+
+-- ---------------------------------------------------------------------
+-- Check 10: Orders where shipping_cost exceeds gross_revenue
+-- Why: Unusually high shipping could be a data error inflating costs
+--      (affecting Q1 and Q2) or a genuine business problem.
+-- Method: WHERE compares two columns; GROUP BY then profiles the
+--         problem orders by category and by basket size.
+-- Expected: unknown; investigate before deciding.
+-- Result: 56 orders. The 10 cheapest are all single-item orders with
+--         shipping 2-3x revenue. Books (18) and Beauty (15) account for
+--         33 of 56 (59%) but only 22% of all orders. By items_ordered:
+--         <fill in from your last query>.
+-- Conclusion: <your one sentence: error or business pattern, and why>
+-- Decision: keep these rows in the analysis. They are real costs;
+--           removing them would overstate profitability.
+-- ---------------------------------------------------------------------
+SELECT COUNT(*) AS shipping_exceeds_revenue_rows
+FROM orders
+WHERE shipping_cost > gross_revenue;
+
+SELECT primary_category, COUNT(*) AS orders_with_high_shipping
+FROM orders
+WHERE shipping_cost > gross_revenue
+GROUP BY primary_category
+ORDER BY orders_with_high_shipping DESC;
+
+SELECT items_ordered, COUNT(*) AS orders_with_high_shipping
+FROM orders
+WHERE shipping_cost > gross_revenue
+GROUP BY items_ordered
+ORDER BY items_ordered;

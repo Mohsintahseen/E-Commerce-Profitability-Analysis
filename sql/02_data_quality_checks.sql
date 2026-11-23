@@ -92,3 +92,24 @@ SELECT returned, COUNT(*) AS order_count
 FROM orders
 GROUP BY returned
 ORDER BY order_count DESC;
+
+
+-- ---------------------------------------------------------------------
+-- Check 7: Business-level duplicate orders
+-- Why: order_id is a primary key, so MySQL already blocks repeated IDs.
+--      The real risk is the same order loaded twice under different IDs,
+--      which would inflate revenue, costs and order counts.
+-- Method: GROUP BY five fields describing the order; HAVING keeps only
+--         groups that occur more than once (HAVING filters groups after
+--         aggregation, which WHERE cannot do).
+-- Expected: 0 rows
+-- Result: 0 rows (no duplicates on these five fields)
+-- Limitation: does not catch duplicates that differ in any of the five
+--             fields.
+-- ---------------------------------------------------------------------
+
+SELECT
+	customer_id, order_date, channel, primary_category, gross_revenue, COUNT(*) AS times_seen
+FROM orders
+GROUP BY customer_id, order_date, channel, primary_category, gross_revenue
+HAVING COUNT(*) > 1;

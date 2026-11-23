@@ -50,3 +50,45 @@ SELECT
 	MIN(order_date) AS earliest_order_date,
     MAX(order_date) AS latest_order_date
 FROM orders;
+
+-- ---------------------------------------------------------------------
+-- Check 4: Distinct values and order counts per sales channel
+-- Why: Spelling or capitalisation variants (e.g. 'website' vs 'Website')
+--      would split one channel into several groups and distort Q2.
+-- Expected: 4 channels; counts total 2000
+-- Result: Website 795, Mobile App 589, Marketplace 419,
+--         Social Commerce 197 (total 2000, no variants)
+-- Note: Social Commerce has the fewest orders, so its averages are
+--       based on a smaller sample.
+-- ---------------------------------------------------------------------
+
+SELECT channel, COUNT(*) AS order_count
+FROM orders
+GROUP BY channel
+ORDER BY order_count DESC;
+
+-- ---------------------------------------------------------------------
+-- Check 5: Distinct values and order counts per primary category
+-- Why: Same as Check 4, for the grouping column used in Q1 and Q3.
+-- Expected: 8 categories; counts total 2000
+-- Result: Clothing 293, Sports 292, Electronics 267, Toys 257,
+--         Food & Beverage 247, Books 239, Beauty 205,
+--         Home & Kitchen 200 (total 2000, no variants)
+-- ---------------------------------------------------------------------
+
+SELECT primary_category, COUNT(*) AS order_count
+FROM orders
+GROUP BY primary_category
+ORDER BY order_count DESC;
+
+-- ---------------------------------------------------------------------
+-- Check 6: Values of the returned flag
+-- Why: The return analysis (Q3) depends on this flag being clean.
+-- Expected: 2 values (Yes / No); counts total 2000
+-- Result: No 1856, Yes 144 (total 2000)
+-- ---------------------------------------------------------------------
+
+SELECT returned, COUNT(*) AS order_count
+FROM orders
+GROUP BY returned
+ORDER BY order_count DESC;
